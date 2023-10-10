@@ -14,37 +14,34 @@ struct jugador
 {
     int socket;
     int estado;
-    int id;
     char * user;
 };
 
 void inicializar_vector_jugadores(struct jugador *jugadores)
 {
-    for (int i = 0; i < MAX_CLIENTS; i++)
+    for (int i = 1; i < MAX_CLIENTS; i++)
     {
-        jugadores[i].socket = NO_CONECTADO;
         jugadores[i].estado = NO_CONECTADO;
     }
 }
 
 void guardarNuevoJugador(struct jugador *jugadores, int socket)
 {
-    for (int i = 0; i < MAX_CLIENTS; i++)
+    for (int i = 1; i < MAX_CLIENTS; i++)
     {
         if (jugadores[i].estado == NO_CONECTADO)
         {
-            jugadores[i].socket = socket;
+            jugadores[i].socket = i + 1;
             jugadores[i].estado = CONECTADO;
-            jugadores[i].id = i + 1;
         }
     }
 }
 
-int buscarSocket(struct jugador *jugadores, int id)
+int buscarSocket(struct jugador *jugadores, int socket)
 {
-    for (int i = 0; i < MAX_CLIENTS; i++)
+    for (int i = 1; i < MAX_CLIENTS; i++)
     {
-        if (jugadores[i].id == id && jugadores[i].estado != NO_CONECTADO)
+        if (jugadores[i].socket == socket && jugadores[i].estado != NO_CONECTADO)
         {
             return i;
         }
@@ -54,6 +51,7 @@ int buscarSocket(struct jugador *jugadores, int id)
 
 int usuarioExiste(const char *user)
 {
+
     FILE *archivo;
     char buffer[MSG_SIZE];
 
@@ -113,6 +111,7 @@ int registrarUsuario(const char *user, const char *password)
 
 int verificarUsuarioYPasswordEnArchivo(const char *user, const char *password)
 {
+
     FILE *archivo;
     char buffer[MSG_SIZE];
 
