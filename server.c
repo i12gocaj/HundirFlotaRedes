@@ -42,6 +42,8 @@ int main()
     char identificador[MSG_SIZE];
     int on, ret;
 
+    srand(time(NULL));
+
     // Creo el vector de jugadores
     struct jugador jugadores[MAX_CLIENTS];
     inicializar_vector_jugadores(jugadores);
@@ -234,6 +236,12 @@ int main()
                                                 bzero(buffer, sizeof(buffer));
                                                 sprintf(buffer, "¡Juegas contra el jugador %s!\n", jugadores[j].user);
                                                 send(jugadores[pos].socket, buffer, sizeof(buffer), 0);
+
+                                                generarTableroAleatorio(jugadores[j].tablero);
+                                                enviarTableroAlJugador(jugadores[j].socket, jugadores[j].tablero);
+
+                                                generarTableroAleatorio(jugadores[pos].tablero);
+                                                enviarTableroAlJugador(jugadores[pos].socket, jugadores[pos].tablero);
                                             }
                                         }
                                     }
@@ -242,81 +250,86 @@ int main()
                             else if (strncmp(buffer, "USUARIO", 7) == 0)
                             {
                                 char user[20];
-                                if(sscanf(buffer, "USUARIO %s", user) == 1){
-                                printf("El usuario con socket %d ha introducido la orden USUARIO: %s\n", i, user);
-
-                                if (usuarioExiste(user))
+                                if (sscanf(buffer, "USUARIO %s", user) == 1)
                                 {
+                                    printf("El usuario con socket %d ha introducido la orden USUARIO: %s\n", i, user);
 
-                                    bzero(buffer, sizeof(buffer));
-                                    sprintf(buffer, "+Ok. Usuario correcto\n");
-                                    send(i, buffer, sizeof(buffer), 0);
-
-                                    int pos = buscarSocket(jugadores, i);
-                                    jugadores[pos].user = malloc(strlen(user) + 1);
-                                    if (jugadores[pos].user != NULL)
+                                    if (usuarioExiste(user))
                                     {
-                                        strcpy(jugadores[pos].user, user);
+
+                                        bzero(buffer, sizeof(buffer));
+                                        sprintf(buffer, "+Ok. Usuario correcto\n");
+                                        send(i, buffer, sizeof(buffer), 0);
+
+                                        int pos = buscarSocket(jugadores, i);
+                                        jugadores[pos].user = malloc(strlen(user) + 1);
+                                        if (jugadores[pos].user != NULL)
+                                        {
+                                            strcpy(jugadores[pos].user, user);
+                                        }
+                                        else
+                                        {
+
+                                            printf("Error: No se pudo asignar memoria para el nombre de usuario\n");
+                                            exit(EXIT_FAILURE);
+                                        }
                                     }
                                     else
                                     {
 
-                                        printf("Error: No se pudo asignar memoria para el nombre de usuario\n");
-                                        exit(EXIT_FAILURE);
+                                        bzero(buffer, sizeof(buffer));
+                                        sprintf(buffer, "-Err. Usuario incorrecto\n");
+                                        send(i, buffer, sizeof(buffer), 0);
                                     }
                                 }
                                 else
                                 {
 
                                     bzero(buffer, sizeof(buffer));
-                                    sprintf(buffer, "-Err. Usuario incorrecto\n");
-                                    send(i, buffer, sizeof(buffer), 0);
-                                }
-                                }else{
-
-                                    bzero(buffer, sizeof(buffer));
                                     sprintf(buffer, "-Err. Debes introducir un usuario después de 'USUARIO'\n");
                                     send(i, buffer, sizeof(buffer), 0);
-
-
                                 }
                             }
                             else if (strncmp(buffer, "PASSWORD", 8) == 0)
                             {
 
                                 int pos = buscarSocket(jugadores, i);
-                                if(jugadores[pos].user != NULL){
-
-                                char password[20];
-                                if(sscanf(buffer, "PASSWORD %s", password) == 1){
-                                printf("El usuario con socket %d ha introducido la orden PASSWORD: %s\n", i, password);
-
-                                if (verificarUsuarioYPasswordEnArchivo(jugadores[pos].user, password))
+                                if (jugadores[pos].user != NULL)
                                 {
 
-                                    bzero(buffer, sizeof(buffer));
-                                    sprintf(buffer, "+Ok. Usuario validado\n");
-                                    send(i, buffer, sizeof(buffer), 0);
+                                    char password[20];
+                                    if (sscanf(buffer, "PASSWORD %s", password) == 1)
+                                    {
+                                        printf("El usuario con socket %d ha introducido la orden PASSWORD: %s\n", i, password);
 
-                                    jugadores[pos].estado = LOGUEADO;
+                                        if (verificarUsuarioYPasswordEnArchivo(jugadores[pos].user, password))
+                                        {
 
+                                            bzero(buffer, sizeof(buffer));
+                                            sprintf(buffer, "+Ok. Usuario validado\n");
+                                            send(i, buffer, sizeof(buffer), 0);
+
+                                            jugadores[pos].estado = LOGUEADO;
+                                        }
+                                        else
+                                        {
+
+                                            bzero(buffer, sizeof(buffer));
+                                            sprintf(buffer, "-Err. Error en la validación\n");
+                                            send(i, buffer, sizeof(buffer), 0);
+                                        }
+                                    }
+                                    else
+                                    {
+
+                                        bzero(buffer, sizeof(buffer));
+                                        sprintf(buffer, "-Err. Debes introducir una contraseña después de 'PASSWORD'\n");
+                                        send(i, buffer, sizeof(buffer), 0);
+                                    }
                                 }
                                 else
                                 {
 
-                                    bzero(buffer, sizeof(buffer));
-                                    sprintf(buffer, "-Err. Error en la validación\n");
-                                    send(i, buffer, sizeof(buffer), 0);
-                                }
-                            }else{
-
-                                    bzero(buffer, sizeof(buffer));
-                                    sprintf(buffer, "-Err. Debes introducir una contraseña después de 'PASSWORD'\n");
-                                    send(i, buffer, sizeof(buffer), 0);
-                                }
-                            }else
-                                {
-                                    
                                     bzero(buffer, sizeof(buffer));
                                     sprintf(buffer, "-Err. Debes introducir un nombre de usuario primero\n");
                                     send(i, buffer, sizeof(buffer), 0);
@@ -352,14 +365,15 @@ int main()
                                     sprintf(buffer, "-Err. Formato incorrecto para el comando REGISTRO (REGISTRO -u 'usuario' -p 'contraseña')\n");
                                     send(i, buffer, sizeof(buffer), 0);
                                 }
-                            }else
+                            }
+                            else
                             {
-                                    bzero(buffer, sizeof(buffer));
-                                    sprintf(buffer, "-Err. Comando desconocido\n");
-                                    send(i, buffer, sizeof(buffer), 0);
+                                bzero(buffer, sizeof(buffer));
+                                sprintf(buffer, "-Err. Comando desconocido\n");
+                                send(i, buffer, sizeof(buffer), 0);
                             }
                         }
-                        
+
                         // Si el cliente introdujo ctrl+c
                         if (recibidos == 0)
                         {
@@ -396,7 +410,6 @@ void salirCliente(int socket, fd_set *readfds, int *numClientes, int arrayClient
     (*numClientes)--;
 
     printf("Desconexión del cliente <%d>\n", socket);
-
 }
 
 void manejador(int signum)

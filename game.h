@@ -10,12 +10,109 @@
 #define MAX_CLIENTS 30
 #define MSG_SIZE 250
 
+#define FILAS 10
+#define COLUMNAS 10
+#define AGUA 'A'
+#define BARCO 'B'
+
 struct jugador
 {
     int socket;
     int estado;
     char * user;
+    char tablero[FILAS][COLUMNAS];
 };
+
+int esPosicionValida(char tablero[FILAS][COLUMNAS], int fila, int columna, int tamano, int direccion) {
+    if (direccion == 0) {
+        if (columna + tamano - 1 >= COLUMNAS) {
+            return 0; // Fuera del rango
+        }
+
+        for (int i = fila - 1; i <= fila + 1; i++) {
+            for (int j = columna - 1; j <= columna + tamano; j++) {
+                if (i >= 0 && i < FILAS && j >= 0 && j < COLUMNAS && tablero[i][j] != AGUA) {
+                    return 0;
+                }
+            }
+        }
+    } else {
+        if (fila + tamano - 1 >= FILAS) {
+            return 0; // Fuera del rango
+        }
+
+        for (int i = fila - 1; i <= fila + tamano; i++) {
+            for (int j = columna - 1; j <= columna + 1; j++) {
+                if (i >= 0 && i < FILAS && j >= 0 && j < COLUMNAS && tablero[i][j] != AGUA) {
+                    return 0;
+                }
+            }
+        }
+    }
+    return 1; // Posición válida
+}
+
+void colocarBarcoAleatorio(char tablero[FILAS][COLUMNAS], int tamano) {
+    int fila, columna, direccion;
+    do {
+        fila = rand() % FILAS;
+        columna = rand() % COLUMNAS;
+        direccion = rand() % 2; // 0 para horizontal, 1 para vertical
+    } while (!esPosicionValida(tablero, fila, columna, tamano, direccion));
+
+    // Colocamos el barco
+    if (direccion == 0) {
+        for (int i = 0; i < tamano; i++) {
+            tablero[fila][columna + i] = BARCO;
+        }
+    } else {
+        for (int i = 0; i < tamano; i++) {
+            tablero[fila + i][columna] = BARCO;
+        }
+    }
+
+    // Marcamos la franja de agua alrededor del barco
+    for (int i = fila - 1; i <= fila + tamano; i++) {
+        for (int j = columna - 1; j <= columna + 1; j++) {
+            if (i >= 0 && i < FILAS && j >= 0 && j < COLUMNAS && tablero[i][j] != BARCO) {
+                tablero[i][j] = AGUA;
+            }
+        }
+    }
+}
+
+
+
+void inicializarTableroJugador(char tablero[FILAS][COLUMNAS]) {
+    for (int i = 0; i < FILAS; i++) {
+        for (int j = 0; j < COLUMNAS; j++) {
+            tablero[i][j] = AGUA;
+        }
+    }
+}
+
+void generarTableroAleatorio(char tablero[FILAS][COLUMNAS]) {
+    inicializarTableroJugador(tablero);
+
+    colocarBarcoAleatorio(tablero, 4);
+    colocarBarcoAleatorio(tablero, 3);
+    colocarBarcoAleatorio(tablero, 3);
+    colocarBarcoAleatorio(tablero, 2);
+    colocarBarcoAleatorio(tablero, 2);
+}
+
+void enviarTableroAlJugador(int socket, char tablero[FILAS][COLUMNAS]) {
+    char buffer[MSG_SIZE];
+    sprintf(buffer, "Tu tablero:\n");
+    for (int i = 0; i < FILAS; i++) {
+        for (int j = 0; j < COLUMNAS; j++) {
+            sprintf(buffer + strlen(buffer), "%c ", tablero[i][j]);
+        }
+        sprintf(buffer + strlen(buffer), ";\n");
+    }
+    send(socket, buffer, sizeof(buffer), 0);
+}
+
 
 void inicializar_vector_jugadores(struct jugador *jugadores)
 {
