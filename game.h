@@ -10,12 +10,15 @@
 
 #define MAX_CLIENTS 30
 #define MAX_PARTIDAS 10
-#define MSG_SIZE 250
+#define MSG_SIZE 500
+#define numBarcos 5
 
 #define FILAS 10
 #define COLUMNAS 10
 #define AGUA 'A'
 #define BARCO 'B'
+
+int contadorPartidas = 1;
 
 struct jugador
 {
@@ -23,10 +26,23 @@ struct jugador
     int estado;
     char user[MSG_SIZE];
     char tablero[FILAS][COLUMNAS];
-    char tablero2[FILAS][COLUMNAS];
+    char tableroX[FILAS][COLUMNAS];
     bool turno;
-    int idPartida;
+    int enemigo;
+    int contadorHundido;
+    int contadorDisparos;
 };
+
+void generarMatrizX(char matriz[FILAS][COLUMNAS])
+{
+    for (int i = 0; i < FILAS; i++)
+    {
+        for (int j = 0; j < COLUMNAS; j++)
+        {
+            matriz[i][j] = 'X';
+        }
+    }
+}
 
 int esPosicionValida(char tablero[FILAS][COLUMNAS], int fila, int columna, int tamano, int direccion)
 {
@@ -133,7 +149,30 @@ void generarTableroAleatorio(char tablero[FILAS][COLUMNAS])
 void enviarTableroAlJugador(int socket, char tablero[FILAS][COLUMNAS])
 {
     char buffer[MSG_SIZE];
-    sprintf(buffer, "Tu tablero:\n");
+    sprintf(buffer, "Tu tablero:\n\n");
+
+    // Etiquetas de las columnas
+    sprintf(buffer + strlen(buffer), "  A B C D E F G H I J\n");
+
+    for (int i = 0; i < FILAS; i++)
+    {
+        // Etiqueta de la fila
+        sprintf(buffer + strlen(buffer), "%d ", i);
+
+        for (int j = 0; j < COLUMNAS; j++)
+        {
+            sprintf(buffer + strlen(buffer), "%c ", tablero[i][j]);
+        }
+
+        sprintf(buffer + strlen(buffer), ";\n");
+    }
+    send(socket, buffer, sizeof(buffer), 0);
+}
+
+void enviarTableroXAlJugador(int socket, char tablero[FILAS][COLUMNAS])
+{
+    char buffer[MSG_SIZE];
+    sprintf(buffer, "El tablero de tu oponente:\n\n");
     for (int i = 0; i < FILAS; i++)
     {
         for (int j = 0; j < COLUMNAS; j++)
@@ -159,9 +198,9 @@ void guardarNuevoJugador(struct jugador *jugadores, int socket)
     {
         if (jugadores[i].estado == NO_CONECTADO)
         {
-            jugadores[i].socket = i + 1;
-            jugadores[i].estado = CONECTADO;
-            // jugadores[i].estado = LOGUEADO;
+            jugadores[i].socket = i;
+            // jugadores[i].estado = CONECTADO;
+            jugadores[i].estado = LOGUEADO;
         }
     }
 }
@@ -174,21 +213,24 @@ void liberarJugador(struct jugador *jugadores, int socket)
         if (jugadores[i].socket == socket)
         {
             jugadores[i].estado = NO_CONECTADO;
-            return;
+            jugadores[i].contadorDisparos = 0;
+            jugadores[i].contadorHundido = 0;
         }
     }
 }
 
-int buscarSocket(struct jugador *jugadores, int socket)
+void terminarPartida(struct jugador *jugadores, int socket)
 {
+
     for (int i = 0; i < MAX_CLIENTS; i++)
     {
-        if (jugadores[i].socket == socket && jugadores[i].estado != NO_CONECTADO)
+        if (jugadores[i].socket == socket)
         {
-            return i;
+            jugadores[i].estado = LOGUEADO;
+            jugadores[i].contadorDisparos = 0;
+            jugadores[i].contadorHundido = 0;
         }
     }
-    return -1;
 }
 
 int usuarioExiste(const char *user)
@@ -291,19 +333,6 @@ int verificarUsuarioYPasswordEnArchivo(const char *user, const char *password)
     return 0;
 }
 
-int obtenerIdUnico()
-{
-    static int contadorPartidas = 1;
-
-    if (contadorPartidas > MAX_PARTIDAS)
-    {
-        printf("Número máximo de partidas alcanzado. Debes esperar a que una partida finalice.\n");
-        return -1;
-    }
-
-    return contadorPartidas++;
-}
-
 bool comprobarNoUsuario(struct jugador *jugadores, const char *user)
 {
 
@@ -311,13 +340,145 @@ bool comprobarNoUsuario(struct jugador *jugadores, const char *user)
     {
         if (jugadores[i].user != NULL && strcmp(jugadores[i].user, user) == 0)
         {
-            // El usuario ya existe, retorna error
+
             return false;
         }
     }
 
-    // El usuario no existe, es válido
     return true;
+}
+
+int BuscarJugador(struct jugador *jugadores, int miSocket)
+{
+
+    for (int i = 0; i < MAX_CLIENTS; i++)
+    {
+
+        if (jugadores[i].estado == BUSCANDO && i != miSocket)
+        {
+            return i;
+        }
+    }
+    return NO_CONECTADO;
+}
+
+void buscarDireccion(char tablero[FILAS][COLUMNAS], int fila, int columna, int *di, int *dj)
+{
+
+    if (fila - 1 >= 0 && tablero[fila - 1][columna] != AGUA)
+    {
+
+        *di = -1;
+        *dj = 0;
+    }
+
+    if (fila + 1 < FILAS && tablero[fila + 1][columna] != AGUA)
+    {
+
+        *di = 1;
+        *dj = 0;
+    }
+
+    if (columna - 1 >= 0 && tablero[fila][columna - 1] != AGUA)
+    {
+
+        *di = 0;
+        *dj = -1;
+    }
+
+    if (columna + 1 < COLUMNAS && tablero[fila][columna + 1] != AGUA)
+    {
+
+        *di = 0;
+        *dj = 1;
+    }
+}
+
+bool BarcoHundido(char tablero[FILAS][COLUMNAS], int fila, int columna)
+{
+    int direccion_i, direccion_j;
+    buscarDireccion(tablero, fila, columna, &direccion_i, &direccion_j);
+
+    if ((direccion_i == -1 && direccion_j == 0) || (direccion_i == 1 && direccion_j == 0))
+    {
+
+        for (int i = fila - 1; i >= 0; i--)
+        {
+            if (tablero[i][columna] == BARCO)
+            {
+                return false;
+            }
+            else if (tablero[i][columna] == AGUA)
+            {
+                break;
+            }
+        }
+
+        for (int i = fila + 1; i < FILAS; i++)
+        {
+
+            if (tablero[i][columna] == BARCO)
+            {
+
+                return false;
+            }
+            else if (tablero[i][columna] == AGUA)
+            {
+
+                return true;
+            }
+        }
+    }
+
+    if ((direccion_i == 0 && direccion_j == -1) || (direccion_i == 0 && direccion_j == 1))
+    {
+
+        for (int i = columna - 1; i >= 0; i--)
+        {
+            if (tablero[fila][i] == BARCO)
+            {
+                return false;
+            }
+            else if (tablero[fila][i] == AGUA)
+            {
+                break;
+            }
+        }
+
+        for (int i = columna + 1; i < COLUMNAS; i++)
+        {
+
+            if (tablero[fila][i] == BARCO)
+            {
+
+                return false;
+            }
+            else if (tablero[fila][i] == AGUA)
+            {
+
+                return true;
+            }
+        }
+    }
+}
+
+bool buscarJugadoresBuscando(struct jugador *jugadores)
+{
+    int contador = 0;
+
+    for (int i = 0; i < MAX_CLIENTS; ++i)
+    {
+        if (jugadores[i].estado == BUSCANDO)
+        {
+            contador++;
+            if (contador == 2)
+            {
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 #endif

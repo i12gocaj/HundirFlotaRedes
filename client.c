@@ -8,6 +8,8 @@
 #include <unistd.h>
 #include <time.h>
 #include <arpa/inet.h>
+#include <stdbool.h>
+#include "game.h"
 
 int main()
 {
@@ -17,11 +19,12 @@ int main()
 	-----------------------------------------------------*/
 	int sd;
 	struct sockaddr_in sockname;
-	char buffer[250];
+	char buffer[MSG_SIZE];
 	socklen_t len_sockname;
 	fd_set readfds, auxfds;
 	int salida;
 	int fin = 0;
+	struct jugador jugadores[MAX_CLIENTS];
 
 	/* --------------------------------------------------
 		Se abre el socket
@@ -75,6 +78,21 @@ int main()
 			recv(sd, buffer, sizeof(buffer), 0);
 
 			printf("\n%s\n", buffer);
+
+			if (strstr(buffer, "+Ok. AGUA:") != NULL)
+			{
+				int j = jugadores[sd].enemigo;
+
+				
+			}
+
+			if (strstr(buffer, "+Ok. TOCADO:") != NULL)
+			{
+			}
+
+			if (strstr(buffer, "+Ok. HUNDIDO:") != NULL)
+			{
+			}
 
 			if (strcmp(buffer, "Demasiados clientes conectados\n") == 0)
 				fin = 1;

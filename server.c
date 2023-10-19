@@ -10,11 +10,9 @@
 #include <time.h>
 #include <arpa/inet.h>
 #include <stdbool.h>
+#include <ctype.h>
 
 #include "game.h"
-
-#define MSG_SIZE 250
-#define MAX_CLIENTS 30
 
 /*
  * El servidor ofrece el servicio de un chat
@@ -45,6 +43,11 @@ int main()
 
     char user[MSG_SIZE];
     char password[MSG_SIZE];
+
+     int contador = 0;
+
+    int fila, columna;
+    char letra;
 
     srand(time(NULL));
 
@@ -163,7 +166,6 @@ int main()
                         bzero(buffer, sizeof(buffer));
                         fgets(buffer, sizeof(buffer), stdin);
 
-                        // Controlar si se ha introducido "SALIR", cerrando todos los sockets y finalmente saliendo del servidor. (implementar)
                         if (strcmp(buffer, "SALIR\n") == 0)
                         {
 
@@ -191,91 +193,119 @@ int main()
                             // COMPRUEBO SI EL MENSAJE DEL CLIENTE ES SALIR
                             if (strcmp(buffer, "SALIR\n") == 0)
                             {
-                                salirCliente(i, &readfds, &numClientes, arrayClientes);
+
+                                if (jugadores[i].estado == JUGANDO)
+                                {
+
+                                    int j = jugadores[i].enemigo;
+
+                                    contadorPartidas = contadorPartidas - 1;
+
+                                    contador--;
+
+                                    terminarPartida(jugadores, j);
+
+                                    bzero(buffer, sizeof(buffer));
+                                    sprintf(buffer, "+Ok. Tu oponente a terminado la partida\n");
+                                    send(j, buffer, sizeof(buffer), 0);
+                                }
+
                                 liberarJugador(jugadores, i);
+                                salirCliente(i, &readfds, &numClientes, arrayClientes);
                             }
-                            else if (strncmp(buffer, "INICIAR-PARTIDA", 15) == 0)
+                            // else if (strncmp(buffer, "INICIAR-PARTIDA", 15) == 0)
+                            else if (strncmp(buffer, "a", 1) == 0)
                             {
-                                int pos = buscarSocket(jugadores, i);
+
+                                if (jugadores[i].estado != LOGUEADO)
+                                {
+                                    bzero(buffer, sizeof(buffer));
+                                    sprintf(buffer, "-Err. No puedes introducir ahora 'INICIAR-PARTIDA'\n");
+                                    send(i, buffer, sizeof(buffer), 0);
+                                    break;
+                                }
 
                                 printf("El jugador %d quiere jugar\n", i);
 
-                                if (jugadores[pos].estado != LOGUEADO)
+                                jugadores[i].estado = BUSCANDO;
+
+                                if (buscarJugadoresBuscando(jugadores))
                                 {
+
+                                    contador++;
+
+                                    if (contador > MAX_PARTIDAS)
+                                    {
+
+                                        bzero(buffer, sizeof(buffer));
+                                        sprintf(buffer, "Número máximo de partidas alcanzado. Debes esperar a que una partida finalice\n");
+                                        send(i, buffer, sizeof(buffer), 0);
+                                        break;
+                                    }
+
+                                    int j = BuscarJugador(jugadores, i);
+
+                                    jugadores[i].enemigo = j;
+
+                                    jugadores[j].enemigo = i;
+
+                                    jugadores[i].estado = JUGANDO;
+                                    jugadores[i].turno = false;
+
+                                    jugadores[j].estado = JUGANDO;
+                                    jugadores[j].turno = true;
+
                                     bzero(buffer, sizeof(buffer));
-                                    sprintf(buffer, "-Err: No puedes introducir ahora 'INICIAR-PARTIDA'\n");
+                                    sprintf(buffer, "+Ok. Empieza la partida, ID de la partida: %d\n", contador);
+
                                     send(i, buffer, sizeof(buffer), 0);
+                                    send(j, buffer, sizeof(buffer), 0);
+
+                                    printf("Jugador %s con socket %d emparejado contra el jugador %s con socket %d en la partida %d\n", jugadores[i].user, i, jugadores[j].user, j, contador);
+
+                                    bzero(buffer, sizeof(buffer));
+                                    sprintf(buffer, "¡Juegas contra el jugador %.50s!\n", jugadores[i].user);
+                                    send(j, buffer, sizeof(buffer), 0);
+
+                                    bzero(buffer, sizeof(buffer));
+                                    sprintf(buffer, "¡Juegas contra el jugador %.50s!\n", jugadores[j].user);
+                                    send(i, buffer, sizeof(buffer), 0);
+
+                                    generarTableroAleatorio(jugadores[i].tablero);
+                                    generarTableroAleatorio(jugadores[j].tablero);
+
+                                    enviarTableroAlJugador(i, jugadores[i].tablero);
+                                    enviarTableroAlJugador(j, jugadores[j].tablero);
+
+                                    generarMatrizX(jugadores[i].tableroX);
+                                    generarMatrizX(jugadores[j].tableroX);
+
+                                    enviarTableroXAlJugador(i, jugadores[i].tableroX);
+                                    enviarTableroXAlJugador(j, jugadores[j].tableroX);
+
+                                    bzero(buffer, sizeof(buffer));
+                                    sprintf(buffer, "Turno de %.50s\n", jugadores[j].user);
+                                    send(i, buffer, sizeof(buffer), 0);
+
+                                    bzero(buffer, sizeof(buffer));
+                                    sprintf(buffer, "Tu turno\n");
+                                    send(j, buffer, sizeof(buffer), 0);
                                 }
                                 else
                                 {
 
-                                    jugadores[pos].estado = BUSCANDO;
                                     bzero(buffer, sizeof(buffer));
-                                    sprintf(buffer, "+OK: Esperando jugadores\n");
+                                    sprintf(buffer, "+Ok. Esperando jugadores\n");
                                     send(i, buffer, sizeof(buffer), 0);
-
-                                    int jugadoresBuscando = 0;
-                                    for (int j = 0; j < MAX_CLIENTS; j++)
-                                    {
-                                        if (jugadores[j].estado == BUSCANDO && j != pos)
-                                        {
-                                            jugadoresBuscando++;
-                                            if (jugadoresBuscando == 1)
-                                            {
-
-                                                int idPartida = obtenerIdUnico();
-
-                                                jugadores[j].estado = JUGANDO;
-                                                jugadores[j].turno = true;
-                                                jugadores[j].idPartida = idPartida;
-
-                                                jugadores[pos].estado = JUGANDO;
-                                                jugadores[pos].turno = false;
-                                                jugadores[pos].idPartida = idPartida;
-
-                                                bzero(buffer, sizeof(buffer));
-                                                sprintf(buffer, "+OK: Empieza la partida, ID de la partida: %d\n", idPartida);
-
-                                                printf("Jugador %s con socket %d emparejado contra el jugador %s con socket %d en la partida %d\n", jugadores[j].user, jugadores[j].socket, jugadores[pos].user, jugadores[pos].socket, idPartida);
-
-                                                send(jugadores[j].socket, buffer, sizeof(buffer), 0);
-                                                send(jugadores[pos].socket, buffer, sizeof(buffer), 0);
-
-                                                bzero(buffer, sizeof(buffer));
-                                                sprintf(buffer, "¡Juegas contra el jugador %.50s!\n", jugadores[pos].user);
-                                                send(jugadores[j].socket, buffer, sizeof(buffer), 0);
-
-                                                bzero(buffer, sizeof(buffer));
-                                                sprintf(buffer, "¡Juegas contra el jugador %.50s!\n", jugadores[j].user);
-                                                send(jugadores[pos].socket, buffer, sizeof(buffer), 0);
-
-                                                generarTableroAleatorio(jugadores[j].tablero);
-                                                enviarTableroAlJugador(jugadores[j].socket, jugadores[j].tablero);
-
-                                                generarTableroAleatorio(jugadores[pos].tablero2);
-                                                enviarTableroAlJugador(jugadores[pos].socket, jugadores[pos].tablero2);
-
-                                                bzero(buffer, sizeof(buffer));
-                                                sprintf(buffer, "Tu turno: %s\n", jugadores[j].turno ? "true" : "false");
-                                                send(jugadores[j].socket, buffer, sizeof(buffer), 0);
-
-                                                bzero(buffer, sizeof(buffer));
-                                                sprintf(buffer, "Tu turno: %s\n", jugadores[pos].turno ? "true" : "false");
-                                                send(jugadores[pos].socket, buffer, sizeof(buffer), 0);
-                                            }
-                                        }
-                                    }
                                 }
                             }
                             else if (strncmp(buffer, "USUARIO", 7) == 0)
                             {
 
-                                int pos = buscarSocket(jugadores, i);
-
                                 if (sscanf(buffer, "USUARIO %s", user) == 1)
                                 {
 
-                                    if (jugadores[pos].estado != CONECTADO || comprobarNoUsuario(jugadores, user) == false)
+                                    if (jugadores[i].estado != CONECTADO || comprobarNoUsuario(jugadores, user) == false)
                                     {
 
                                         bzero(buffer, sizeof(buffer));
@@ -284,19 +314,18 @@ int main()
                                         break;
                                     }
 
-                                    strcpy(jugadores[pos].user, user);
+                                    printf("El usuario con socket %d ha introducido la orden USUARIO: %s\n", i, user);
 
-                                    printf("El usuario con socket %d ha introducido la orden USUARIO: %s\n", i, jugadores[pos].user);
-
-                                    if (usuarioExiste(jugadores[pos].user))
+                                    if (usuarioExiste(user))
                                     {
 
                                         bzero(buffer, sizeof(buffer));
                                         sprintf(buffer, "+Ok. Usuario correcto\n");
                                         send(i, buffer, sizeof(buffer), 0);
 
-                                        jugadores[pos].estado = USUARIO;
-                                        
+                                        strcpy(jugadores[i].user, user);
+
+                                        jugadores[i].estado = USUARIO;
                                     }
                                     else
                                     {
@@ -317,14 +346,13 @@ int main()
                             else if (strncmp(buffer, "PASSWORD", 8) == 0)
                             {
 
-                                int pos = buscarSocket(jugadores, i);
-                                if (jugadores[pos].user != NULL)
+                                if (jugadores[i].user != NULL)
                                 {
 
                                     if (sscanf(buffer, "PASSWORD %s", password) == 1)
                                     {
 
-                                        if (jugadores[pos].estado != USUARIO)
+                                        if (jugadores[i].estado != USUARIO)
                                         {
 
                                             bzero(buffer, sizeof(buffer));
@@ -335,14 +363,14 @@ int main()
 
                                         printf("El usuario con socket %d ha introducido la orden PASSWORD: %s\n", i, password);
 
-                                        if (verificarUsuarioYPasswordEnArchivo(jugadores[pos].user, password))
+                                        if (verificarUsuarioYPasswordEnArchivo(jugadores[i].user, password))
                                         {
 
                                             bzero(buffer, sizeof(buffer));
                                             sprintf(buffer, "+Ok. Usuario validado\n");
                                             send(i, buffer, sizeof(buffer), 0);
 
-                                            jugadores[pos].estado = LOGUEADO;
+                                            jugadores[i].estado = LOGUEADO;
                                         }
                                         else
                                         {
@@ -373,9 +401,8 @@ int main()
 
                                 if (sscanf(buffer, "REGISTRO -u %s -p %s", user, password) == 2)
                                 {
-                                    int pos = buscarSocket(jugadores, i);
 
-                                    if (jugadores[pos].estado != CONECTADO)
+                                    if (jugadores[i].estado != CONECTADO)
                                     {
 
                                         bzero(buffer, sizeof(buffer));
@@ -403,6 +430,144 @@ int main()
 
                                     bzero(buffer, sizeof(buffer));
                                     sprintf(buffer, "-Err. Formato incorrecto para el comando REGISTRO (REGISTRO -u 'usuario' -p 'contraseña')\n");
+                                    send(i, buffer, sizeof(buffer), 0);
+                                }
+                            }
+                            else if (strncmp(buffer, "DISPARO", 7) == 0)
+                            {
+
+                                int j = jugadores[i].enemigo;
+
+                                if (sscanf(buffer, "DISPARO %c,%d", &letra, &columna) == 2)
+                                {
+
+                                    if (jugadores[i].estado != JUGANDO)
+                                    {
+                                        bzero(buffer, sizeof(buffer));
+                                        sprintf(buffer, "-Err. No puedes introducir ahora 'DISPARO'\n");
+                                        send(i, buffer, sizeof(buffer), 0);
+                                        break;
+                                    }
+
+                                    if (letra >= 'A' && letra <= 'J')
+                                    {
+
+                                        fila = letra - 'A';
+                                    }
+                                    else
+                                    {
+                                        bzero(buffer, sizeof(buffer));
+                                        sprintf(buffer, "La primera coordenada no está en el rango (A-J)\n");
+                                        send(i, buffer, sizeof(buffer), 0);
+                                        break;
+                                    }
+
+                                    if (columna >= 0 && columna < 10)
+                                    {
+
+                                        if (jugadores[i].turno)
+                                        {
+                                            jugadores[i].contadorDisparos++;
+
+                                            char resultado = jugadores[j].tablero[fila][columna];
+
+                                            if (resultado == AGUA)
+                                            {
+
+                                                jugadores[i].tableroX[fila][columna] = 'A';
+                                                enviarTableroXAlJugador(i, jugadores[i].tableroX);
+
+                                                bzero(buffer, sizeof(buffer));
+                                                sprintf(buffer, "+Ok. AGUA: %c,%d\n", letra, columna);
+                                                send(i, buffer, sizeof(buffer), 0);
+
+                                                bzero(buffer, sizeof(buffer));
+                                                sprintf(buffer, "+Ok. Disparo en: %c,%d\n", letra, columna);
+                                                send(j, buffer, sizeof(buffer), 0);
+
+                                                jugadores[i].turno = false;
+                                                jugadores[j].turno = true;
+
+                                                bzero(buffer, sizeof(buffer));
+                                                sprintf(buffer, "Turno de %.50s\n", jugadores[j].user);
+                                                send(i, buffer, sizeof(buffer), 0);
+
+                                                bzero(buffer, sizeof(buffer));
+                                                sprintf(buffer, "Tu turno\n");
+                                                send(j, buffer, sizeof(buffer), 0);
+                                            }
+                                            else if (resultado == BARCO)
+                                            {
+
+                                                jugadores[i].tableroX[fila][columna] = 'B';
+                                                enviarTableroXAlJugador(i, jugadores[i].tableroX);
+                                                jugadores[j].tablero[fila][columna] = 'X';
+                                                enviarTableroAlJugador(j, jugadores[j].tablero);
+
+                                                if (BarcoHundido(jugadores[j].tablero, fila, columna))
+                                                {
+
+                                                    bzero(buffer, sizeof(buffer));
+                                                    sprintf(buffer, "+Ok. HUNDIDO: %c,%d\n", letra, columna);
+                                                    send(i, buffer, sizeof(buffer), 0);
+
+                                                    bzero(buffer, sizeof(buffer));
+                                                    sprintf(buffer, "+Ok. Disparo en: %c,%d\n", letra, columna);
+                                                    send(j, buffer, sizeof(buffer), 0);
+
+                                                    jugadores[i].contadorHundido++;
+
+                                                    if (jugadores[i].contadorHundido == numBarcos)
+                                                    {
+
+                                                        contadorPartidas = contadorPartidas - 1;
+
+                                                        bzero(buffer, sizeof(buffer));
+                                                        sprintf(buffer, "+Ok. %.50s ha ganado, numero de disparos %d\n", jugadores[i].user, jugadores[i].contadorDisparos);
+                                                        send(i, buffer, sizeof(buffer), 0);
+
+                                                        bzero(buffer, sizeof(buffer));
+                                                        sprintf(buffer, "+Ok. %.50s ha ganado, numero de disparos %d\n", jugadores[i].user, jugadores[i].contadorDisparos);
+                                                        send(j, buffer, sizeof(buffer), 0);
+
+                                                        terminarPartida(jugadores, i);
+                                                        terminarPartida(jugadores, j);
+                                                        contador--;
+                                                    }
+                                                }
+                                                else
+                                                {
+
+                                                    bzero(buffer, sizeof(buffer));
+                                                    sprintf(buffer, "+Ok. TOCADO: %c,%d\n", letra, columna);
+                                                    send(i, buffer, sizeof(buffer), 0);
+
+                                                    bzero(buffer, sizeof(buffer));
+                                                    sprintf(buffer, "+Ok. Disparo en: %c,%d\n", letra, columna);
+                                                    send(j, buffer, sizeof(buffer), 0);
+                                                }
+                                            }
+                                        }
+                                        else
+                                        {
+
+                                            bzero(buffer, sizeof(buffer));
+                                            sprintf(buffer, "-Err. No es tu turno\n");
+                                            send(i, buffer, sizeof(buffer), 0);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        bzero(buffer, sizeof(buffer));
+                                        sprintf(buffer, "La segunda coordenada no es valida (0-9)\n");
+                                        send(i, buffer, sizeof(buffer), 0);
+                                    }
+                                }
+                                else
+                                {
+
+                                    bzero(buffer, sizeof(buffer));
+                                    sprintf(buffer, "-Err. Debes introducir una coordenada después de 'DISPARO' (DISPARO B,3)\n");
                                     send(i, buffer, sizeof(buffer), 0);
                                 }
                             }
