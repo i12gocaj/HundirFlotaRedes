@@ -50,7 +50,7 @@ int esPosicionValida(char tablero[FILAS][COLUMNAS], int fila, int columna, int t
     {
         if (columna + tamano - 1 >= COLUMNAS)
         {
-            return 0; // Fuera del rango
+            return 0;
         }
 
         for (int i = fila - 1; i <= fila + 1; i++)
@@ -68,7 +68,7 @@ int esPosicionValida(char tablero[FILAS][COLUMNAS], int fila, int columna, int t
     {
         if (fila + tamano - 1 >= FILAS)
         {
-            return 0; // Fuera del rango
+            return 0;
         }
 
         for (int i = fila - 1; i <= fila + tamano; i++)
@@ -82,7 +82,7 @@ int esPosicionValida(char tablero[FILAS][COLUMNAS], int fila, int columna, int t
             }
         }
     }
-    return 1; // Posición válida
+    return 1;
 }
 
 void colocarBarcoAleatorio(char tablero[FILAS][COLUMNAS], int tamano)
@@ -95,7 +95,6 @@ void colocarBarcoAleatorio(char tablero[FILAS][COLUMNAS], int tamano)
         direccion = rand() % 2; // 0 para horizontal, 1 para vertical
     } while (!esPosicionValida(tablero, fila, columna, tamano, direccion));
 
-    // Colocamos el barco
     if (direccion == 0)
     {
         for (int i = 0; i < tamano; i++)
@@ -111,7 +110,6 @@ void colocarBarcoAleatorio(char tablero[FILAS][COLUMNAS], int tamano)
         }
     }
 
-    // Marcamos la franja de agua alrededor del barco
     for (int i = fila - 1; i <= fila + tamano; i++)
     {
         for (int j = columna - 1; j <= columna + 1; j++)
@@ -150,12 +148,11 @@ void imprimirTableroEnCliente(char tablero[FILAS][COLUMNAS])
 {
     printf("Tu tablero:\n\n");
 
-    // Etiquetas de las columnas
     printf("  A B C D E F G H I J\n");
 
     for (int i = 0; i < FILAS; i++)
     {
-        // Etiqueta de la fila
+
         printf("%d ", i);
 
         for (int j = 0; j < COLUMNAS; j++)
@@ -172,8 +169,13 @@ void imprimirTableroOponenteEnCliente(char tablero[FILAS][COLUMNAS])
 {
     printf("El tablero de tu oponente:\n\n");
 
+    printf("  A B C D E F G H I J\n");
+
     for (int i = 0; i < FILAS; i++)
     {
+
+        printf("%d ", i);
+
         for (int j = 0; j < COLUMNAS; j++)
         {
             printf("%c ", tablero[i][j]);
@@ -200,7 +202,6 @@ void guardarNuevoJugador(struct jugador *jugadores, int socket)
         {
             jugadores[i].socket = i;
             jugadores[i].estado = CONECTADO;
-            //jugadores[i].estado = LOGUEADO;
         }
     }
 }
@@ -496,7 +497,7 @@ void matrizACadena(char tablero[FILAS][COLUMNAS], char buffer[MSG_SIZE])
         }
         buffer[index++] = ';';
     }
-    buffer[index] = '\0'; // Agrega el carácter nulo al final de la cadena
+    buffer[index] = '\0';
 }
 
 void cadenaAMatriz(const char buffer[MSG_SIZE], char tablero[FILAS][COLUMNAS])
@@ -509,14 +510,20 @@ void cadenaAMatriz(const char buffer[MSG_SIZE], char tablero[FILAS][COLUMNAS])
             tablero[i][j] = buffer[index++];
             if (j < COLUMNAS - 1 && buffer[index] == ',')
             {
-                // Ignora la coma en la cadena
+
                 index++;
             }
         }
-        // Ignora el delimitador de fila en la cadena
+
         index++;
     }
 }
 
+void enviarMensajeCliente(int socket, const char *mensaje)
+{
+    char buffer[MSG_SIZE];
+    sprintf(buffer, "%s\n", mensaje);
+    send(socket, buffer, sizeof(buffer), 0);
+}
 
 #endif

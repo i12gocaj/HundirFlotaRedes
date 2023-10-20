@@ -146,9 +146,19 @@ int main()
 				sscanf(buffer, "+Ok. Disparo en: %c,%d", &letra, &columna);
 				fila = letra - 'A';
 
-				JugadorCliente[sd].tablero[columna][fila] = 'X';
+				if (JugadorCliente[sd].tablero[columna][fila] == 'A')
+				{
 
-				imprimirTableroEnCliente(JugadorCliente[sd].tablero);
+					JugadorCliente[sd].tablero[columna][fila] = '.';
+					imprimirTableroEnCliente(JugadorCliente[sd].tablero);
+				}
+				else
+				{
+
+					JugadorCliente[sd].tablero[columna][fila] = 'X';
+
+					imprimirTableroEnCliente(JugadorCliente[sd].tablero);
+				}
 			}
 
 			if (strcmp(buffer, "Demasiados clientes conectados\n") == 0)
