@@ -20,11 +20,19 @@ int main()
 	int sd;
 	struct sockaddr_in sockname;
 	char buffer[MSG_SIZE];
+	char bufferTablero[MSG_SIZE];
+	char bufferTableroX[MSG_SIZE];
 	socklen_t len_sockname;
 	fd_set readfds, auxfds;
 	int salida;
 	int fin = 0;
-	struct jugador jugadores[MAX_CLIENTS];
+	int fila, columna;
+	char letra;
+	int columna_disparo;
+	struct jugador JugadorCliente[MAX_CLIENTS];
+	inicializar_vector_jugadores(JugadorCliente);
+
+	srand(time(NULL));
 
 	/* --------------------------------------------------
 		Se abre el socket
@@ -79,19 +87,68 @@ int main()
 
 			printf("\n%s\n", buffer);
 
+			if (strstr(buffer, "+Ok. Empieza la partida, ID de la partida:") != NULL)
+			{
+
+				generarTableroAleatorio(JugadorCliente[sd].tablero);
+				generarMatrizX(JugadorCliente[sd].tableroX);
+
+				bzero(bufferTablero, sizeof(bufferTablero));
+				matrizACadena(JugadorCliente[sd].tablero, bufferTablero);
+				send(sd, bufferTablero, strlen(bufferTablero), 0);
+
+				bzero(buffer, sizeof(buffer));
+				matrizACadena(JugadorCliente[sd].tableroX, bufferTableroX);
+				send(sd, bufferTableroX, strlen(bufferTableroX), 0);
+
+				imprimirTableroEnCliente(JugadorCliente[sd].tablero);
+				imprimirTableroOponenteEnCliente(JugadorCliente[sd].tableroX);
+			}
+
 			if (strstr(buffer, "+Ok. AGUA:") != NULL)
 			{
-				int j = jugadores[sd].enemigo;
 
-				
+				sscanf(buffer, "+Ok. AGUA: %c,%d", &letra, &columna);
+
+				fila = letra - 'A';
+
+				JugadorCliente[sd].tableroX[columna][fila] = 'A';
+
+				imprimirTableroOponenteEnCliente(JugadorCliente[sd].tableroX);
 			}
 
 			if (strstr(buffer, "+Ok. TOCADO:") != NULL)
 			{
+
+				sscanf(buffer, "+Ok. TOCADO: %c,%d", &letra, &columna);
+
+				fila = letra - 'A';
+
+				JugadorCliente[sd].tableroX[columna][fila] = 'B';
+
+				imprimirTableroOponenteEnCliente(JugadorCliente[sd].tableroX);
 			}
 
 			if (strstr(buffer, "+Ok. HUNDIDO:") != NULL)
 			{
+
+				sscanf(buffer, "+Ok. HUNDIDO: %c,%d", &letra, &columna);
+				fila = letra - 'A';
+
+				JugadorCliente[sd].tableroX[columna][fila] = 'B';
+
+				imprimirTableroOponenteEnCliente(JugadorCliente[sd].tableroX);
+			}
+
+			if (strstr(buffer, "+Ok. Disparo en:") != NULL)
+			{
+
+				sscanf(buffer, "+Ok. Disparo en: %c,%d", &letra, &columna);
+				fila = letra - 'A';
+
+				JugadorCliente[sd].tablero[columna][fila] = 'X';
+
+				imprimirTableroEnCliente(JugadorCliente[sd].tablero);
 			}
 
 			if (strcmp(buffer, "Demasiados clientes conectados\n") == 0)
@@ -107,7 +164,6 @@ int main()
 			if (FD_ISSET(0, &auxfds))
 			{
 				bzero(buffer, sizeof(buffer));
-
 				fgets(buffer, sizeof(buffer), stdin);
 
 				if (strcmp(buffer, "SALIR\n") == 0)
@@ -118,7 +174,6 @@ int main()
 				send(sd, buffer, sizeof(buffer), 0);
 			}
 		}
-
 	} while (fin == 0);
 
 	close(sd);

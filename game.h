@@ -146,42 +146,42 @@ void generarTableroAleatorio(char tablero[FILAS][COLUMNAS])
     colocarBarcoAleatorio(tablero, 2);
 }
 
-void enviarTableroAlJugador(int socket, char tablero[FILAS][COLUMNAS])
+void imprimirTableroEnCliente(char tablero[FILAS][COLUMNAS])
 {
-    char buffer[MSG_SIZE];
-    sprintf(buffer, "Tu tablero:\n\n");
+    printf("Tu tablero:\n\n");
 
     // Etiquetas de las columnas
-    sprintf(buffer + strlen(buffer), "  A B C D E F G H I J\n");
+    printf("  A B C D E F G H I J\n");
 
     for (int i = 0; i < FILAS; i++)
     {
         // Etiqueta de la fila
-        sprintf(buffer + strlen(buffer), "%d ", i);
+        printf("%d ", i);
 
         for (int j = 0; j < COLUMNAS; j++)
         {
-            sprintf(buffer + strlen(buffer), "%c ", tablero[i][j]);
+            printf("%c ", tablero[i][j]);
         }
 
-        sprintf(buffer + strlen(buffer), ";\n");
+        printf(";\n");
     }
-    send(socket, buffer, sizeof(buffer), 0);
+    printf("\n");
 }
 
-void enviarTableroXAlJugador(int socket, char tablero[FILAS][COLUMNAS])
+void imprimirTableroOponenteEnCliente(char tablero[FILAS][COLUMNAS])
 {
-    char buffer[MSG_SIZE];
-    sprintf(buffer, "El tablero de tu oponente:\n\n");
+    printf("El tablero de tu oponente:\n\n");
+
     for (int i = 0; i < FILAS; i++)
     {
         for (int j = 0; j < COLUMNAS; j++)
         {
-            sprintf(buffer + strlen(buffer), "%c ", tablero[i][j]);
+            printf("%c ", tablero[i][j]);
         }
-        sprintf(buffer + strlen(buffer), ";\n");
+
+        printf(";\n");
     }
-    send(socket, buffer, sizeof(buffer), 0);
+    printf("\n");
 }
 
 void inicializar_vector_jugadores(struct jugador *jugadores)
@@ -199,8 +199,8 @@ void guardarNuevoJugador(struct jugador *jugadores, int socket)
         if (jugadores[i].estado == NO_CONECTADO)
         {
             jugadores[i].socket = i;
-            // jugadores[i].estado = CONECTADO;
-            jugadores[i].estado = LOGUEADO;
+            jugadores[i].estado = CONECTADO;
+            //jugadores[i].estado = LOGUEADO;
         }
     }
 }
@@ -480,5 +480,43 @@ bool buscarJugadoresBuscando(struct jugador *jugadores)
 
     return false;
 }
+
+void matrizACadena(char tablero[FILAS][COLUMNAS], char buffer[MSG_SIZE])
+{
+    int index = 0;
+    for (int i = 0; i < FILAS; i++)
+    {
+        for (int j = 0; j < COLUMNAS; j++)
+        {
+            buffer[index++] = tablero[i][j];
+            if (j < COLUMNAS - 1)
+            {
+                buffer[index++] = ',';
+            }
+        }
+        buffer[index++] = ';';
+    }
+    buffer[index] = '\0'; // Agrega el carácter nulo al final de la cadena
+}
+
+void cadenaAMatriz(const char buffer[MSG_SIZE], char tablero[FILAS][COLUMNAS])
+{
+    int index = 0;
+    for (int i = 0; i < FILAS; i++)
+    {
+        for (int j = 0; j < COLUMNAS; j++)
+        {
+            tablero[i][j] = buffer[index++];
+            if (j < COLUMNAS - 1 && buffer[index] == ',')
+            {
+                // Ignora la coma en la cadena
+                index++;
+            }
+        }
+        // Ignora el delimitador de fila en la cadena
+        index++;
+    }
+}
+
 
 #endif

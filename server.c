@@ -30,6 +30,8 @@ int main()
     int sd, new_sd;
     struct sockaddr_in sockname, from;
     char buffer[MSG_SIZE];
+    char bufferTablero[MSG_SIZE];
+    char bufferTableroX[MSG_SIZE];
     socklen_t from_len;
     fd_set readfds, auxfds;
     int salida;
@@ -44,12 +46,12 @@ int main()
     char user[MSG_SIZE];
     char password[MSG_SIZE];
 
-     int contador = 0;
+    int contador = 0;
 
     int fila, columna;
     char letra;
 
-    srand(time(NULL));
+    int bytes_received;
 
     // Creo el vector de jugadores
     struct jugador jugadores[MAX_CLIENTS];
@@ -213,8 +215,8 @@ int main()
                                 liberarJugador(jugadores, i);
                                 salirCliente(i, &readfds, &numClientes, arrayClientes);
                             }
-                            // else if (strncmp(buffer, "INICIAR-PARTIDA", 15) == 0)
-                            else if (strncmp(buffer, "a", 1) == 0)
+                            //else if (strncmp(buffer, "a", 1) == 0)
+                            else if (strncmp(buffer, "INICIAR-PARTIDA", 15) == 0)   
                             {
 
                                 if (jugadores[i].estado != LOGUEADO)
@@ -255,11 +257,29 @@ int main()
                                     jugadores[j].estado = JUGANDO;
                                     jugadores[j].turno = true;
 
+                                    bzero(bufferTablero, sizeof(bufferTablero));
+                                    bzero(bufferTableroX, sizeof(bufferTableroX));
+
                                     bzero(buffer, sizeof(buffer));
                                     sprintf(buffer, "+Ok. Empieza la partida, ID de la partida: %d\n", contador);
-
                                     send(i, buffer, sizeof(buffer), 0);
+
+                                    recv(i, bufferTablero, sizeof(bufferTablero), 0);
+                                    cadenaAMatriz(bufferTablero, jugadores[i].tablero);
+
+                                    recv(i, bufferTableroX, sizeof(bufferTableroX), 0);
+                                    cadenaAMatriz(bufferTableroX, jugadores[i].tableroX);
+
+                                    bzero(bufferTablero, sizeof(bufferTablero));
+                                    bzero(bufferTableroX, sizeof(bufferTableroX));
+
                                     send(j, buffer, sizeof(buffer), 0);
+
+                                    recv(j, bufferTablero, sizeof(bufferTablero), 0);
+                                    cadenaAMatriz(bufferTablero, jugadores[j].tablero);
+
+                                    recv(j, bufferTableroX, sizeof(bufferTableroX), 0);
+                                    cadenaAMatriz(bufferTableroX, jugadores[j].tableroX);
 
                                     printf("Jugador %s con socket %d emparejado contra el jugador %s con socket %d en la partida %d\n", jugadores[i].user, i, jugadores[j].user, j, contador);
 
@@ -270,18 +290,6 @@ int main()
                                     bzero(buffer, sizeof(buffer));
                                     sprintf(buffer, "¡Juegas contra el jugador %.50s!\n", jugadores[j].user);
                                     send(i, buffer, sizeof(buffer), 0);
-
-                                    generarTableroAleatorio(jugadores[i].tablero);
-                                    generarTableroAleatorio(jugadores[j].tablero);
-
-                                    enviarTableroAlJugador(i, jugadores[i].tablero);
-                                    enviarTableroAlJugador(j, jugadores[j].tablero);
-
-                                    generarMatrizX(jugadores[i].tableroX);
-                                    generarMatrizX(jugadores[j].tableroX);
-
-                                    enviarTableroXAlJugador(i, jugadores[i].tableroX);
-                                    enviarTableroXAlJugador(j, jugadores[j].tableroX);
 
                                     bzero(buffer, sizeof(buffer));
                                     sprintf(buffer, "Turno de %.50s\n", jugadores[j].user);
@@ -438,16 +446,16 @@ int main()
 
                                 int j = jugadores[i].enemigo;
 
+                                if (jugadores[i].estado != JUGANDO)
+                                {
+                                    bzero(buffer, sizeof(buffer));
+                                    sprintf(buffer, "-Err. No puedes introducir ahora 'DISPARO'\n");
+                                    send(i, buffer, sizeof(buffer), 0);
+                                    break;
+                                }
+
                                 if (sscanf(buffer, "DISPARO %c,%d", &letra, &columna) == 2)
                                 {
-
-                                    if (jugadores[i].estado != JUGANDO)
-                                    {
-                                        bzero(buffer, sizeof(buffer));
-                                        sprintf(buffer, "-Err. No puedes introducir ahora 'DISPARO'\n");
-                                        send(i, buffer, sizeof(buffer), 0);
-                                        break;
-                                    }
 
                                     if (letra >= 'A' && letra <= 'J')
                                     {
@@ -469,13 +477,12 @@ int main()
                                         {
                                             jugadores[i].contadorDisparos++;
 
-                                            char resultado = jugadores[j].tablero[fila][columna];
+                                            char resultado = jugadores[j].tablero[columna][fila];
 
                                             if (resultado == AGUA)
                                             {
 
-                                                jugadores[i].tableroX[fila][columna] = 'A';
-                                                enviarTableroXAlJugador(i, jugadores[i].tableroX);
+                                                jugadores[i].tableroX[columna][fila] = 'A';
 
                                                 bzero(buffer, sizeof(buffer));
                                                 sprintf(buffer, "+Ok. AGUA: %c,%d\n", letra, columna);
@@ -499,12 +506,11 @@ int main()
                                             else if (resultado == BARCO)
                                             {
 
-                                                jugadores[i].tableroX[fila][columna] = 'B';
-                                                enviarTableroXAlJugador(i, jugadores[i].tableroX);
-                                                jugadores[j].tablero[fila][columna] = 'X';
-                                                enviarTableroAlJugador(j, jugadores[j].tablero);
+                                                jugadores[i].tableroX[columna][fila] = 'B';
 
-                                                if (BarcoHundido(jugadores[j].tablero, fila, columna))
+                                                jugadores[j].tablero[columna][fila] = 'X';
+
+                                                if (BarcoHundido(jugadores[j].tablero, columna, fila))
                                                 {
 
                                                     bzero(buffer, sizeof(buffer));
