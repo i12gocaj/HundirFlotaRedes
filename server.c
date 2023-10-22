@@ -11,12 +11,8 @@
 #include <arpa/inet.h>
 #include <stdbool.h>
 #include <ctype.h>
-
+#include <sys/select.h>
 #include "game.h"
-
-/*
- * El servidor ofrece el servicio de un chat
- */
 
 void manejador(int signum);
 void salirCliente(int socket, fd_set *readfds, int *numClientes, int arrayClientes[]);
@@ -145,7 +141,7 @@ int main()
                                 arrayClientes[numClientes] = new_sd;
                                 numClientes++;
                                 FD_SET(new_sd, &readfds);
-                                strcpy(buffer, "Bienvenido al chat\n");
+                                strcpy(buffer, "+0k. Usuario conectado\n");
                                 send(new_sd, buffer, sizeof(buffer), 0);
 
                                 printf("Nuevo Cliente conectado en <%d>\n", new_sd);
@@ -214,7 +210,7 @@ int main()
                                 liberarJugador(jugadores, i);
                                 salirCliente(i, &readfds, &numClientes, arrayClientes);
                             }
-                            else if (strncmp(buffer, "INICIAR-PARTIDA", 15) == 0)
+                            else if (strcmp(buffer, "INICIAR-PARTIDA\n") == 0)
                             {
 
                                 if (jugadores[i].estado != LOGUEADO)
@@ -442,78 +438,87 @@ int main()
 
                                                     char resultado = jugadores[j].tablero[columna][fila];
 
-                                                    if (resultado == AGUA)
+                                                    if (jugadores[i].tableroX[columna][fila] == 'B' || jugadores[i].tableroX[columna][fila] == 'A')
                                                     {
 
-                                                        jugadores[i].tableroX[columna][fila] = 'A';
-
-                                                        bzero(buffer, sizeof(buffer));
-                                                        sprintf(buffer, "+Ok. AGUA: %c,%d\n", letra, columna);
-                                                        send(i, buffer, sizeof(buffer), 0);
-
-                                                        bzero(buffer, sizeof(buffer));
-                                                        sprintf(buffer, "+Ok. Disparo en: %c,%d\n", letra, columna);
-                                                        send(j, buffer, sizeof(buffer), 0);
-
-                                                        jugadores[i].turno = false;
-                                                        jugadores[j].turno = true;
-
-                                                        bzero(buffer, sizeof(buffer));
-                                                        sprintf(buffer, "Turno de %.50s\n", jugadores[j].user);
-                                                        send(i, buffer, sizeof(buffer), 0);
-
-                                                        bzero(buffer, sizeof(buffer));
-                                                        sprintf(buffer, "Tu turno\n");
-                                                        send(j, buffer, sizeof(buffer), 0);
+                                                        enviarMensajeCliente(i, "-Err. No puedes disparar dos veces en el mismo sitio\n");
                                                     }
-                                                    else if (resultado == BARCO)
+                                                    else
                                                     {
 
-                                                        jugadores[i].tableroX[columna][fila] = 'B';
-
-                                                        jugadores[j].tablero[columna][fila] = 'X';
-
-                                                        if (BarcoHundido(jugadores[j].tablero, columna, fila))
+                                                        if (resultado == AGUA)
                                                         {
 
+                                                            jugadores[i].tableroX[columna][fila] = 'A';
+
                                                             bzero(buffer, sizeof(buffer));
-                                                            sprintf(buffer, "+Ok. HUNDIDO: %c,%d\n", letra, columna);
+                                                            sprintf(buffer, "+Ok. AGUA: %c,%d\n", letra, columna);
                                                             send(i, buffer, sizeof(buffer), 0);
 
                                                             bzero(buffer, sizeof(buffer));
                                                             sprintf(buffer, "+Ok. Disparo en: %c,%d\n", letra, columna);
                                                             send(j, buffer, sizeof(buffer), 0);
 
-                                                            jugadores[i].contadorHundido++;
+                                                            jugadores[i].turno = false;
+                                                            jugadores[j].turno = true;
 
-                                                            if (jugadores[i].contadorHundido == numBarcos)
+                                                            bzero(buffer, sizeof(buffer));
+                                                            sprintf(buffer, "Turno de %.50s\n", jugadores[j].user);
+                                                            send(i, buffer, sizeof(buffer), 0);
+
+                                                            bzero(buffer, sizeof(buffer));
+                                                            sprintf(buffer, "Tu turno\n");
+                                                            send(j, buffer, sizeof(buffer), 0);
+                                                        }
+                                                        else if (resultado == BARCO)
+                                                        {
+
+                                                            jugadores[i].tableroX[columna][fila] = 'B';
+
+                                                            jugadores[j].tablero[columna][fila] = 'X';
+
+                                                            if (BarcoHundido(jugadores[j].tablero, columna, fila))
                                                             {
 
-                                                                contadorPartidas = contadorPartidas - 1;
-
                                                                 bzero(buffer, sizeof(buffer));
-                                                                sprintf(buffer, "+Ok. %.50s ha ganado, numero de disparos %d\n", jugadores[i].user, jugadores[i].contadorDisparos);
+                                                                sprintf(buffer, "+Ok. HUNDIDO: %c,%d\n", letra, columna);
                                                                 send(i, buffer, sizeof(buffer), 0);
 
                                                                 bzero(buffer, sizeof(buffer));
-                                                                sprintf(buffer, "+Ok. %.50s ha ganado, numero de disparos %d\n", jugadores[i].user, jugadores[i].contadorDisparos);
+                                                                sprintf(buffer, "+Ok. Disparo en: %c,%d\n", letra, columna);
                                                                 send(j, buffer, sizeof(buffer), 0);
 
-                                                                terminarPartida(jugadores, i);
-                                                                terminarPartida(jugadores, j);
-                                                                contador--;
+                                                                jugadores[i].contadorHundido++;
+
+                                                                if (jugadores[i].contadorHundido == numBarcos)
+                                                                {
+
+                                                                    contadorPartidas = contadorPartidas - 1;
+
+                                                                    bzero(buffer, sizeof(buffer));
+                                                                    sprintf(buffer, "+Ok. %.50s ha ganado, numero de disparos %d\n", jugadores[i].user, jugadores[i].contadorDisparos);
+                                                                    send(i, buffer, sizeof(buffer), 0);
+
+                                                                    bzero(buffer, sizeof(buffer));
+                                                                    sprintf(buffer, "+Ok. %.50s ha ganado, numero de disparos %d\n", jugadores[i].user, jugadores[i].contadorDisparos);
+                                                                    send(j, buffer, sizeof(buffer), 0);
+
+                                                                    terminarPartida(jugadores, i);
+                                                                    terminarPartida(jugadores, j);
+                                                                    contador--;
+                                                                }
                                                             }
-                                                        }
-                                                        else
-                                                        {
+                                                            else
+                                                            {
 
-                                                            bzero(buffer, sizeof(buffer));
-                                                            sprintf(buffer, "+Ok. TOCADO: %c,%d\n", letra, columna);
-                                                            send(i, buffer, sizeof(buffer), 0);
+                                                                bzero(buffer, sizeof(buffer));
+                                                                sprintf(buffer, "+Ok. TOCADO: %c,%d\n", letra, columna);
+                                                                send(i, buffer, sizeof(buffer), 0);
 
-                                                            bzero(buffer, sizeof(buffer));
-                                                            sprintf(buffer, "+Ok. Disparo en: %c,%d\n", letra, columna);
-                                                            send(j, buffer, sizeof(buffer), 0);
+                                                                bzero(buffer, sizeof(buffer));
+                                                                sprintf(buffer, "+Ok. Disparo en: %c,%d\n", letra, columna);
+                                                                send(j, buffer, sizeof(buffer), 0);
+                                                            }
                                                         }
                                                     }
                                                 }

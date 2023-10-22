@@ -9,6 +9,7 @@
 #include <time.h>
 #include <arpa/inet.h>
 #include <stdbool.h>
+#include <sys/select.h>
 #include "game.h"
 
 int main()
