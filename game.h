@@ -8,17 +8,15 @@
 #define BUSCANDO 4
 #define JUGANDO 5
 
-#define MAX_CLIENTS 30
+#define MAX_CLIENTS 35
 #define MAX_PARTIDAS 10
-#define MSG_SIZE 500
+#define MSG_SIZE 250
 #define numBarcos 5
 
 #define FILAS 10
 #define COLUMNAS 10
 #define AGUA 'A'
 #define BARCO 'B'
-
-int contadorPartidas = 1;
 
 struct jugador
 {
@@ -241,7 +239,6 @@ void terminarPartida(struct jugador *jugadores, int socket)
             jugadores[i].enemigo = -1;
             jugadores[i].contadorHundido = 0;
             jugadores[i].contadorDisparos = 0;
-            jugadores[i].socket = -1;
         }
     }
 }

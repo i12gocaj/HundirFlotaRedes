@@ -128,6 +128,8 @@ int main()
 				JugadorCliente[sd].tableroX[columna][fila] = 'B';
 
 				imprimirTableroOponenteEnCliente(JugadorCliente[sd].tableroX);
+
+				printf("Sigue disparando:\n\n");
 			}
 
 			if (strstr(buffer, "+Ok. HUNDIDO:") != NULL)
@@ -139,6 +141,7 @@ int main()
 				JugadorCliente[sd].tableroX[columna][fila] = 'B';
 
 				imprimirTableroOponenteEnCliente(JugadorCliente[sd].tableroX);
+				printf("Sigue disparando:\n\n");
 			}
 
 			if (strstr(buffer, "+Ok. Disparo en:") != NULL)

@@ -237,15 +237,14 @@ int main()
                                         jugadores[j].estado = JUGANDO;
                                         jugadores[j].turno = true;
 
-                                        contador++;
-
-                                        if (contador > MAX_PARTIDAS)
+                                        if (contador++ > MAX_PARTIDAS)
                                         {
 
                                             enviarMensajeCliente(i, "Número máximo de partidas alcanzado. Debes esperar a que una partida finalice\n");
                                         }
                                         else
                                         {
+                                            contador++;
 
                                             bzero(buffer, sizeof(buffer));
                                             sprintf(buffer, "+Ok. Empieza la partida, ID de la partida: %d\n", contador);
@@ -265,7 +264,7 @@ int main()
                                             recv(j, bufferTableroX, sizeof(bufferTableroX), 0);
                                             cadenaAMatriz(bufferTableroX, jugadores[j].tableroX);
 
-                                            printf("Jugador %s con socket %d emparejado contra el jugador %s con socket %d en la partida %d\n", jugadores[i].user, i, jugadores[j].user, j, contador);
+                                            printf("Jugador %s con socket %d emparejado contra el jugador %s con socket %d en la partida con id %d\n", jugadores[i].user, i, jugadores[j].user, j, contador);
 
                                             bzero(buffer, sizeof(buffer));
                                             sprintf(buffer, "¡Juegas contra el jugador %.50s!\n", jugadores[i].user);
@@ -297,20 +296,25 @@ int main()
                                 if (sscanf(buffer, "USUARIO %s", user) == 1)
                                 {
 
-                                    if (jugadores[i].estado != CONECTADO || comprobarNoUsuario(jugadores, user) == false)
+                                    if (jugadores[i].estado != CONECTADO)
                                     {
 
-                                        enviarMensajeCliente(i, "-Err. No puedes introducir ahora 'USUARIO' o ya ha sido introducido\n");
+                                        enviarMensajeCliente(i, "-Err. No puedes introducir ahora 'USUARIO'\n");
+                                    }
+                                    else if (comprobarNoUsuario(jugadores, user) == false)
+                                    {
+
+                                        enviarMensajeCliente(i, "-Err. Este usuario ya ha sido introducido\n");
                                     }
                                     else
                                     {
-
-                                        printf("El usuario con socket %d ha introducido la orden USUARIO: %s\n", i, user);
 
                                         if (usuarioExiste(user))
                                         {
 
                                             enviarMensajeCliente(i, "+Ok. Usuario correcto\n");
+
+                                            printf("El usuario con socket %d ha introducido un usuario correcto con la orden USUARIO: %s\n", i, user);
 
                                             strcpy(jugadores[i].user, user);
 
@@ -320,6 +324,7 @@ int main()
                                         {
 
                                             enviarMensajeCliente(i, "-Err. Usuario incorrecto\n");
+                                            printf("El usuario con socket %d ha introducido un usuario incorrecto con la orden USUARIO: %s\n", i, user);
                                         }
                                     }
                                 }
@@ -346,12 +351,12 @@ int main()
                                         else
                                         {
 
-                                            printf("El usuario con socket %d ha introducido la orden PASSWORD: %s\n", i, password);
-
                                             if (verificarUsuarioYPasswordEnArchivo(jugadores[i].user, password))
                                             {
 
                                                 enviarMensajeCliente(i, "+Ok. Usuario validado\n");
+
+                                                printf("El usuario con socket %d se ha validado en el sistema introduciendo la orden PASSWORD: %s\n", i, password);
 
                                                 jugadores[i].estado = LOGUEADO;
                                             }
@@ -359,6 +364,7 @@ int main()
                                             {
 
                                                 enviarMensajeCliente(i, "-Err. Error en la validación\n");
+                                                printf("El usuario con socket %d no ha conseguido validarse en el sistema introduciendo la orden PASSWORD: %s\n", i, password);
                                             }
                                         }
                                     }
@@ -432,9 +438,6 @@ int main()
 
                                                 if (jugadores[i].turno)
                                                 {
-                                                    jugadores[i].contadorDisparos++;
-
-                                                    char resultado = jugadores[j].tablero[columna][fila];
 
                                                     if (jugadores[i].tableroX[columna][fila] == 'B' || jugadores[i].tableroX[columna][fila] == 'A')
                                                     {
@@ -443,6 +446,9 @@ int main()
                                                     }
                                                     else
                                                     {
+                                                        char resultado = jugadores[j].tablero[columna][fila];
+
+                                                        jugadores[i].contadorDisparos++;
 
                                                         if (resultado == AGUA)
                                                         {
