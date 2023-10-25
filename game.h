@@ -213,9 +213,16 @@ void liberarJugador(struct jugador *jugadores, int socket)
     {
         if (jugadores[i].socket == socket)
         {
+
             jugadores[i].estado = NO_CONECTADO;
-            jugadores[i].contadorDisparos = 0;
+            memset(jugadores[i].user, 0, sizeof(jugadores[i].user));
+            memset(jugadores[i].tablero, 0, sizeof(jugadores[i].tablero));
+            memset(jugadores[i].tableroX, 0, sizeof(jugadores[i].tableroX));
+            jugadores[i].turno = false;
+            jugadores[i].enemigo = -1;
             jugadores[i].contadorHundido = 0;
+            jugadores[i].contadorDisparos = 0;
+            jugadores[i].socket = -1;
         }
     }
 }
@@ -228,8 +235,13 @@ void terminarPartida(struct jugador *jugadores, int socket)
         if (jugadores[i].socket == socket)
         {
             jugadores[i].estado = LOGUEADO;
-            jugadores[i].contadorDisparos = 0;
+            memset(jugadores[i].tablero, 0, sizeof(jugadores[i].tablero));
+            memset(jugadores[i].tableroX, 0, sizeof(jugadores[i].tableroX));
+            jugadores[i].turno = false;
+            jugadores[i].enemigo = -1;
             jugadores[i].contadorHundido = 0;
+            jugadores[i].contadorDisparos = 0;
+            jugadores[i].socket = -1;
         }
     }
 }

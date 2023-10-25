@@ -198,8 +198,6 @@ int main()
 
                                     int j = jugadores[i].enemigo;
 
-                                    contadorPartidas = contadorPartidas - 1;
-
                                     contador--;
 
                                     terminarPartida(jugadores, j);
@@ -227,6 +225,18 @@ int main()
                                     if (buscarJugadoresBuscando(jugadores))
                                     {
 
+                                        int j = BuscarJugador(jugadores, i);
+
+                                        jugadores[i].enemigo = j;
+
+                                        jugadores[j].enemigo = i;
+
+                                        jugadores[i].estado = JUGANDO;
+                                        jugadores[i].turno = false;
+
+                                        jugadores[j].estado = JUGANDO;
+                                        jugadores[j].turno = true;
+
                                         contador++;
 
                                         if (contador > MAX_PARTIDAS)
@@ -236,18 +246,6 @@ int main()
                                         }
                                         else
                                         {
-
-                                            int j = BuscarJugador(jugadores, i);
-
-                                            jugadores[i].enemigo = j;
-
-                                            jugadores[j].enemigo = i;
-
-                                            jugadores[i].estado = JUGANDO;
-                                            jugadores[i].turno = false;
-
-                                            jugadores[j].estado = JUGANDO;
-                                            jugadores[j].turno = true;
 
                                             bzero(buffer, sizeof(buffer));
                                             sprintf(buffer, "+Ok. Empieza la partida, ID de la partida: %d\n", contador);
@@ -493,8 +491,6 @@ int main()
                                                                 if (jugadores[i].contadorHundido == numBarcos)
                                                                 {
 
-                                                                    contadorPartidas = contadorPartidas - 1;
-
                                                                     bzero(buffer, sizeof(buffer));
                                                                     sprintf(buffer, "+Ok. %.50s ha ganado, numero de disparos %d\n", jugadores[i].user, jugadores[i].contadorDisparos);
                                                                     send(i, buffer, sizeof(buffer), 0);
@@ -505,6 +501,7 @@ int main()
 
                                                                     terminarPartida(jugadores, i);
                                                                     terminarPartida(jugadores, j);
+
                                                                     contador--;
                                                                 }
                                                             }
