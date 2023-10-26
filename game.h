@@ -17,6 +17,7 @@
 #define COLUMNAS 10
 #define AGUA 'A'
 #define BARCO 'B'
+#define SPLASH 'O'
 
 struct jugador
 {
@@ -24,7 +25,6 @@ struct jugador
     int estado;
     char user[MSG_SIZE];
     char tablero[FILAS][COLUMNAS];
-    char tableroX[FILAS][COLUMNAS];
     bool turno;
     int enemigo;
     int contadorHundido;
@@ -215,7 +215,6 @@ void liberarJugador(struct jugador *jugadores, int socket)
             jugadores[i].estado = NO_CONECTADO;
             memset(jugadores[i].user, 0, sizeof(jugadores[i].user));
             memset(jugadores[i].tablero, 0, sizeof(jugadores[i].tablero));
-            memset(jugadores[i].tableroX, 0, sizeof(jugadores[i].tableroX));
             jugadores[i].turno = false;
             jugadores[i].enemigo = -1;
             jugadores[i].contadorHundido = 0;
@@ -234,7 +233,6 @@ void terminarPartida(struct jugador *jugadores, int socket)
         {
             jugadores[i].estado = LOGUEADO;
             memset(jugadores[i].tablero, 0, sizeof(jugadores[i].tablero));
-            memset(jugadores[i].tableroX, 0, sizeof(jugadores[i].tableroX));
             jugadores[i].turno = false;
             jugadores[i].enemigo = -1;
             jugadores[i].contadorHundido = 0;
@@ -375,28 +373,28 @@ int BuscarJugador(struct jugador *jugadores, int miSocket)
 void buscarDireccion(char tablero[FILAS][COLUMNAS], int fila, int columna, int *di, int *dj)
 {
 
-    if (fila - 1 >= 0 && tablero[fila - 1][columna] != AGUA)
+    if (fila - 1 >= 0 && tablero[fila - 1][columna] != AGUA && tablero[fila - 1][columna] != SPLASH)
     {
 
         *di = -1;
         *dj = 0;
     }
 
-    if (fila + 1 < FILAS && tablero[fila + 1][columna] != AGUA)
+    if (fila + 1 < FILAS && tablero[fila + 1][columna] != AGUA && tablero[fila - 1][columna] != SPLASH)
     {
 
         *di = 1;
         *dj = 0;
     }
 
-    if (columna - 1 >= 0 && tablero[fila][columna - 1] != AGUA)
+    if (columna - 1 >= 0 && tablero[fila][columna - 1] != AGUA && tablero[fila - 1][columna] != SPLASH)
     {
 
         *di = 0;
         *dj = -1;
     }
 
-    if (columna + 1 < COLUMNAS && tablero[fila][columna + 1] != AGUA)
+    if (columna + 1 < COLUMNAS && tablero[fila][columna + 1] != AGUA && tablero[fila - 1][columna] != SPLASH)
     {
 
         *di = 0;
@@ -418,7 +416,7 @@ bool BarcoHundido(char tablero[FILAS][COLUMNAS], int fila, int columna)
             {
                 return false;
             }
-            else if (tablero[i][columna] == AGUA)
+            else if (tablero[i][columna] == AGUA || tablero[i][columna] == SPLASH)
             {
                 break;
             }
@@ -432,7 +430,7 @@ bool BarcoHundido(char tablero[FILAS][COLUMNAS], int fila, int columna)
 
                 return false;
             }
-            else if (tablero[i][columna] == AGUA)
+            else if (tablero[i][columna] == AGUA || tablero[i][columna] == SPLASH)
             {
 
                 return true;
@@ -449,7 +447,7 @@ bool BarcoHundido(char tablero[FILAS][COLUMNAS], int fila, int columna)
             {
                 return false;
             }
-            else if (tablero[fila][i] == AGUA)
+            else if (tablero[fila][i] == AGUA || tablero[i][columna] == SPLASH)
             {
                 break;
             }
@@ -463,7 +461,7 @@ bool BarcoHundido(char tablero[FILAS][COLUMNAS], int fila, int columna)
 
                 return false;
             }
-            else if (tablero[fila][i] == AGUA)
+            else if (tablero[fila][i] == AGUA || tablero[i][columna] == SPLASH)
             {
 
                 return true;

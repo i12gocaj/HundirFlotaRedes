@@ -249,7 +249,7 @@ int main()
                                             sprintf(buffer, "+Ok. Empieza la partida.");
 
                                             generarTableroAleatorio(jugadores[i].tablero);
-                                            generarMatrizX(jugadores[i].tableroX);
+
                                             matrizACadena(jugadores[i].tablero, buffer);
 
                                             send(i, buffer, sizeof(buffer), 0);
@@ -259,7 +259,7 @@ int main()
                                             sprintf(buffer, "+Ok. Empieza la partida.");
 
                                             generarTableroAleatorio(jugadores[j].tablero);
-                                            generarMatrizX(jugadores[j].tableroX);
+
                                             matrizACadena(jugadores[j].tablero, buffer);
 
                                             send(j, buffer, sizeof(buffer), 0);
@@ -425,7 +425,7 @@ int main()
                                                 if (jugadores[i].turno)
                                                 {
 
-                                                    if (jugadores[i].tableroX[columna][fila] == 'B' || jugadores[i].tableroX[columna][fila] == 'A')
+                                                    if (jugadores[i].tablero[columna][fila] == 'X' || jugadores[i].tablero[columna][fila] == 'O')
                                                     {
 
                                                         enviarMensajeCliente(i, "-Err. No puedes disparar dos veces en el mismo sitio\n");
@@ -439,7 +439,7 @@ int main()
                                                         if (resultado == AGUA)
                                                         {
 
-                                                            jugadores[i].tableroX[columna][fila] = 'A';
+                                                            jugadores[i].tablero[columna][fila] = 'O';
 
                                                             bzero(buffer, sizeof(buffer));
                                                             sprintf(buffer, "+Ok. AGUA: %c,%d\n", letra, columna);
@@ -456,8 +456,6 @@ int main()
                                                         }
                                                         else if (resultado == BARCO)
                                                         {
-
-                                                            jugadores[i].tableroX[columna][fila] = 'B';
 
                                                             jugadores[j].tablero[columna][fila] = 'X';
 
