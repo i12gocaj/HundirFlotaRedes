@@ -21,8 +21,6 @@ int main()
 	int sd;
 	struct sockaddr_in sockname;
 	char buffer[MSG_SIZE];
-	char bufferTablero[MSG_SIZE];
-	char bufferTableroX[MSG_SIZE];
 	socklen_t len_sockname;
 	fd_set readfds, auxfds;
 	int salida;
@@ -30,8 +28,12 @@ int main()
 	int fila, columna;
 	char letra;
 	int columna_disparo;
-	struct jugador JugadorCliente[MAX_CLIENTS];
-	inicializar_vector_jugadores(JugadorCliente);
+
+	char tablero[FILAS][COLUMNAS];
+	char tableroX[FILAS][COLUMNAS];
+
+	// struct jugador JugadorCliente[MAX_CLIENTS];
+	// inicializar_vector_jugadores(JugadorCliente);
 
 	srand(time(NULL));
 
@@ -86,24 +88,21 @@ int main()
 			bzero(buffer, sizeof(buffer));
 			recv(sd, buffer, sizeof(buffer), 0);
 
-			printf("\n%s\n", buffer);
+			if (strstr(buffer, "+Ok. Empieza la partida.") != NULL)
+			{
+				printf("\n+Ok. Empieza la partida\n\n");
 
-			if (strstr(buffer, "+Ok. Empieza la partida, ID de la partida:") != NULL)
+				generarMatrizX(tableroX);
+
+				cadenaAMatriz(buffer, tablero);
+
+				imprimirTableroEnCliente(tablero);
+				imprimirTableroOponenteEnCliente(tableroX);
+			}
+			else
 			{
 
-				generarTableroAleatorio(JugadorCliente[sd].tablero);
-				generarMatrizX(JugadorCliente[sd].tableroX);
-
-				bzero(bufferTablero, sizeof(bufferTablero));
-				matrizACadena(JugadorCliente[sd].tablero, bufferTablero);
-				send(sd, bufferTablero, strlen(bufferTablero), 0);
-
-				bzero(buffer, sizeof(buffer));
-				matrizACadena(JugadorCliente[sd].tableroX, bufferTableroX);
-				send(sd, bufferTableroX, strlen(bufferTableroX), 0);
-
-				imprimirTableroEnCliente(JugadorCliente[sd].tablero);
-				imprimirTableroOponenteEnCliente(JugadorCliente[sd].tableroX);
+				printf("\n%s\n", buffer);
 			}
 
 			if (strstr(buffer, "+Ok. AGUA:") != NULL)
@@ -113,9 +112,9 @@ int main()
 
 				fila = letra - 'A';
 
-				JugadorCliente[sd].tableroX[columna][fila] = 'A';
+				tableroX[columna][fila] = 'A';
 
-				imprimirTableroOponenteEnCliente(JugadorCliente[sd].tableroX);
+				imprimirTableroOponenteEnCliente(tableroX);
 			}
 
 			if (strstr(buffer, "+Ok. TOCADO:") != NULL)
@@ -125,11 +124,9 @@ int main()
 
 				fila = letra - 'A';
 
-				JugadorCliente[sd].tableroX[columna][fila] = 'B';
+				tableroX[columna][fila] = 'B';
 
-				imprimirTableroOponenteEnCliente(JugadorCliente[sd].tableroX);
-
-				printf("Sigue disparando:\n\n");
+				imprimirTableroOponenteEnCliente(tableroX);
 			}
 
 			if (strstr(buffer, "+Ok. HUNDIDO:") != NULL)
@@ -138,10 +135,9 @@ int main()
 				sscanf(buffer, "+Ok. HUNDIDO: %c,%d", &letra, &columna);
 				fila = letra - 'A';
 
-				JugadorCliente[sd].tableroX[columna][fila] = 'B';
+				tableroX[columna][fila] = 'B';
 
-				imprimirTableroOponenteEnCliente(JugadorCliente[sd].tableroX);
-				printf("Sigue disparando:\n\n");
+				imprimirTableroOponenteEnCliente(tableroX);
 			}
 
 			if (strstr(buffer, "+Ok. Disparo en:") != NULL)
@@ -150,26 +146,26 @@ int main()
 				sscanf(buffer, "+Ok. Disparo en: %c,%d", &letra, &columna);
 				fila = letra - 'A';
 
-				if (JugadorCliente[sd].tablero[columna][fila] == 'A')
+				if (tablero[columna][fila] == 'A')
 				{
 
-					JugadorCliente[sd].tablero[columna][fila] = '.';
-					imprimirTableroEnCliente(JugadorCliente[sd].tablero);
+					tablero[columna][fila] = '.';
+					imprimirTableroEnCliente(tablero);
 				}
 				else
 				{
 
-					JugadorCliente[sd].tablero[columna][fila] = 'X';
+					tablero[columna][fila] = 'X';
 
-					imprimirTableroEnCliente(JugadorCliente[sd].tablero);
+					imprimirTableroEnCliente(tablero);
 				}
 			}
 
-			if (strcmp(buffer, "Demasiados clientes conectados\n") == 0)
-				fin = 1;
+			if (strcmp(buffer, "Demasiados clientes conectados\n") == 0 || strcmp(buffer, "Desconexión servidor\n") == 0)
+			{
 
-			if (strcmp(buffer, "Desconexión servidor\n") == 0)
 				fin = 1;
+			}
 		}
 		else
 		{

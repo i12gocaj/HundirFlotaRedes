@@ -26,8 +26,6 @@ int main()
     int sd, new_sd;
     struct sockaddr_in sockname, from;
     char buffer[MSG_SIZE];
-    char bufferTablero[MSG_SIZE];
-    char bufferTableroX[MSG_SIZE];
     socklen_t from_len;
     fd_set readfds, auxfds;
     int salida;
@@ -237,7 +235,7 @@ int main()
                                         jugadores[j].estado = JUGANDO;
                                         jugadores[j].turno = true;
 
-                                        if (contador++ > MAX_PARTIDAS)
+                                        if (contador + 1 > MAX_PARTIDAS)
                                         {
 
                                             enviarMensajeCliente(i, "Número máximo de partidas alcanzado. Debes esperar a que una partida finalice\n");
@@ -247,40 +245,28 @@ int main()
                                             contador++;
 
                                             bzero(buffer, sizeof(buffer));
-                                            sprintf(buffer, "+Ok. Empieza la partida, ID de la partida: %d\n", contador);
+
+                                            sprintf(buffer, "+Ok. Empieza la partida.");
+
+                                            generarTableroAleatorio(jugadores[i].tablero);
+                                            generarMatrizX(jugadores[i].tableroX);
+                                            matrizACadena(jugadores[i].tablero, buffer);
+
                                             send(i, buffer, sizeof(buffer), 0);
 
-                                            recv(i, bufferTablero, sizeof(bufferTablero), 0);
-                                            cadenaAMatriz(bufferTablero, jugadores[i].tablero);
+                                            bzero(buffer, sizeof(buffer));
 
-                                            recv(i, bufferTableroX, sizeof(bufferTableroX), 0);
-                                            cadenaAMatriz(bufferTableroX, jugadores[i].tableroX);
+                                            sprintf(buffer, "+Ok. Empieza la partida.");
+
+                                            generarTableroAleatorio(jugadores[j].tablero);
+                                            generarMatrizX(jugadores[j].tableroX);
+                                            matrizACadena(jugadores[j].tablero, buffer);
 
                                             send(j, buffer, sizeof(buffer), 0);
-
-                                            recv(j, bufferTablero, sizeof(bufferTablero), 0);
-                                            cadenaAMatriz(bufferTablero, jugadores[j].tablero);
-
-                                            recv(j, bufferTableroX, sizeof(bufferTableroX), 0);
-                                            cadenaAMatriz(bufferTableroX, jugadores[j].tableroX);
 
                                             printf("Jugador %s con socket %d emparejado contra el jugador %s con socket %d en la partida con id %d\n", jugadores[i].user, i, jugadores[j].user, j, contador);
 
-                                            bzero(buffer, sizeof(buffer));
-                                            sprintf(buffer, "¡Juegas contra el jugador %.50s!\n", jugadores[i].user);
-                                            send(j, buffer, sizeof(buffer), 0);
-
-                                            bzero(buffer, sizeof(buffer));
-                                            sprintf(buffer, "¡Juegas contra el jugador %.50s!\n", jugadores[j].user);
-                                            send(i, buffer, sizeof(buffer), 0);
-
-                                            bzero(buffer, sizeof(buffer));
-                                            sprintf(buffer, "Turno de %.50s\n", jugadores[j].user);
-                                            send(i, buffer, sizeof(buffer), 0);
-
-                                            bzero(buffer, sizeof(buffer));
-                                            sprintf(buffer, "Tu turno\n");
-                                            send(j, buffer, sizeof(buffer), 0);
+                                            enviarMensajeCliente(j, "+Ok. Turno de partida\n");
                                         }
                                     }
                                     else
@@ -466,13 +452,7 @@ int main()
                                                             jugadores[i].turno = false;
                                                             jugadores[j].turno = true;
 
-                                                            bzero(buffer, sizeof(buffer));
-                                                            sprintf(buffer, "Turno de %.50s\n", jugadores[j].user);
-                                                            send(i, buffer, sizeof(buffer), 0);
-
-                                                            bzero(buffer, sizeof(buffer));
-                                                            sprintf(buffer, "Tu turno\n");
-                                                            send(j, buffer, sizeof(buffer), 0);
+                                                            enviarMensajeCliente(j, "+Ok. Turno de partida\n");
                                                         }
                                                         else if (resultado == BARCO)
                                                         {

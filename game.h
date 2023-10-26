@@ -493,7 +493,7 @@ bool buscarJugadoresBuscando(struct jugador *jugadores)
 
 void matrizACadena(char tablero[FILAS][COLUMNAS], char buffer[MSG_SIZE])
 {
-    int index = 0;
+    int index = 26;
     for (int i = 0; i < FILAS; i++)
     {
         for (int j = 0; j < COLUMNAS; j++)
@@ -511,7 +511,8 @@ void matrizACadena(char tablero[FILAS][COLUMNAS], char buffer[MSG_SIZE])
 
 void cadenaAMatriz(const char buffer[MSG_SIZE], char tablero[FILAS][COLUMNAS])
 {
-    int index = 0;
+    int index = 26;
+
     for (int i = 0; i < FILAS; i++)
     {
         for (int j = 0; j < COLUMNAS; j++)
@@ -519,7 +520,6 @@ void cadenaAMatriz(const char buffer[MSG_SIZE], char tablero[FILAS][COLUMNAS])
             tablero[i][j] = buffer[index++];
             if (j < COLUMNAS - 1 && buffer[index] == ',')
             {
-
                 index++;
             }
         }
