@@ -200,7 +200,7 @@ int main()
 
                                     terminarPartida(jugadores, j);
 
-                                    enviarMensajeCliente(j, "+Ok. Tu oponente a terminado la partida\n");
+                                    enviarMensajeCliente(j, "+Ok. Tu oponente ha terminado la partida\n");
                                 }
 
                                 liberarJugador(jugadores, i);
@@ -506,7 +506,7 @@ int main()
                                                 else
                                                 {
 
-                                                    enviarMensajeCliente(i, "-Err. No es tu turno\n");
+                                                    enviarMensajeCliente(i, "-Err. Debe esperar su turno\n");
                                                 }
                                             }
                                             else

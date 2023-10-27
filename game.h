@@ -8,7 +8,7 @@
 #define BUSCANDO 4
 #define JUGANDO 5
 
-#define MAX_CLIENTS 35
+#define MAX_CLIENTS 30
 #define MAX_PARTIDAS 10
 #define MSG_SIZE 250
 #define numBarcos 5
@@ -158,7 +158,7 @@ void imprimirTableroEnCliente(char tablero[FILAS][COLUMNAS])
             printf("%c ", tablero[i][j]);
         }
 
-        printf(";\n");
+        printf("\n");
     }
     printf("\n");
 }
@@ -179,7 +179,7 @@ void imprimirTableroOponenteEnCliente(char tablero[FILAS][COLUMNAS])
             printf("%c ", tablero[i][j]);
         }
 
-        printf(";\n");
+        printf("\n");
     }
     printf("\n");
 }
@@ -502,7 +502,15 @@ void matrizACadena(char tablero[FILAS][COLUMNAS], char buffer[MSG_SIZE])
                 buffer[index++] = ',';
             }
         }
-        buffer[index++] = ';';
+
+        if (i == FILAS - 1)
+        {
+            buffer[index++] = '.';
+        }
+        else
+        {
+            buffer[index++] = ';';
+        }
     }
     buffer[index] = '\0';
 }
