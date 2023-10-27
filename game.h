@@ -380,21 +380,21 @@ void buscarDireccion(char tablero[FILAS][COLUMNAS], int fila, int columna, int *
         *dj = 0;
     }
 
-    if (fila + 1 < FILAS && tablero[fila + 1][columna] != AGUA && tablero[fila - 1][columna] != SPLASH)
+    if (fila + 1 < FILAS && tablero[fila + 1][columna] != AGUA && tablero[fila + 1][columna] != SPLASH)
     {
 
         *di = 1;
         *dj = 0;
     }
 
-    if (columna - 1 >= 0 && tablero[fila][columna - 1] != AGUA && tablero[fila - 1][columna] != SPLASH)
+    if (columna - 1 >= 0 && tablero[fila][columna - 1] != AGUA && tablero[fila][columna - 1] != SPLASH)
     {
 
         *di = 0;
         *dj = -1;
     }
 
-    if (columna + 1 < COLUMNAS && tablero[fila][columna + 1] != AGUA && tablero[fila - 1][columna] != SPLASH)
+    if (columna + 1 < COLUMNAS && tablero[fila][columna + 1] != AGUA && tablero[fila][columna + 1] != SPLASH)
     {
 
         *di = 0;
@@ -447,7 +447,7 @@ bool BarcoHundido(char tablero[FILAS][COLUMNAS], int fila, int columna)
             {
                 return false;
             }
-            else if (tablero[fila][i] == AGUA || tablero[i][columna] == SPLASH)
+            else if (tablero[fila][i] == AGUA || tablero[fila][i] == SPLASH)
             {
                 break;
             }
@@ -461,7 +461,7 @@ bool BarcoHundido(char tablero[FILAS][COLUMNAS], int fila, int columna)
 
                 return false;
             }
-            else if (tablero[fila][i] == AGUA || tablero[i][columna] == SPLASH)
+            else if (tablero[fila][i] == AGUA || tablero[fila][i] == SPLASH)
             {
 
                 return true;
@@ -491,7 +491,7 @@ bool buscarJugadoresBuscando(struct jugador *jugadores)
 
 void matrizACadena(char tablero[FILAS][COLUMNAS], char buffer[MSG_SIZE])
 {
-    int index = 26;
+    int index = 24;
     for (int i = 0; i < FILAS; i++)
     {
         for (int j = 0; j < COLUMNAS; j++)
@@ -517,7 +517,7 @@ void matrizACadena(char tablero[FILAS][COLUMNAS], char buffer[MSG_SIZE])
 
 void cadenaAMatriz(const char buffer[MSG_SIZE], char tablero[FILAS][COLUMNAS])
 {
-    int index = 26;
+    int index = 24;
 
     for (int i = 0; i < FILAS; i++)
     {

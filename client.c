@@ -32,10 +32,7 @@ int main()
 	char tablero[FILAS][COLUMNAS];
 	char tableroX[FILAS][COLUMNAS];
 
-	// struct jugador JugadorCliente[MAX_CLIENTS];
-	// inicializar_vector_jugadores(JugadorCliente);
-
-	srand(time(NULL));
+	
 
 	/* --------------------------------------------------
 		Se abre el socket

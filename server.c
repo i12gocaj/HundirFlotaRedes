@@ -42,6 +42,8 @@ int main()
 
     int contador = 0;
 
+    srand(time(NULL));
+
     int fila, columna;
     char letra;
 
@@ -425,7 +427,7 @@ int main()
                                                 if (jugadores[i].turno)
                                                 {
 
-                                                    if (jugadores[i].tablero[columna][fila] == 'X' || jugadores[i].tablero[columna][fila] == 'O')
+                                                    if (jugadores[j].tablero[columna][fila] == 'X' || jugadores[j].tablero[columna][fila] == 'O')
                                                     {
 
                                                         enviarMensajeCliente(i, "-Err. No puedes disparar dos veces en el mismo sitio\n");
@@ -439,7 +441,7 @@ int main()
                                                         if (resultado == AGUA)
                                                         {
 
-                                                            jugadores[i].tablero[columna][fila] = 'O';
+                                                            jugadores[j].tablero[columna][fila] = 'O';
 
                                                             bzero(buffer, sizeof(buffer));
                                                             sprintf(buffer, "+Ok. AGUA: %c,%d\n", letra, columna);
