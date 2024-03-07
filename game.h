@@ -343,16 +343,13 @@ int verificarUsuarioYPasswordEnArchivo(const char *user, const char *password)
 
 bool comprobarNoUsuario(struct jugador *jugadores, const char *user)
 {
-
     for (int i = 0; i < MAX_CLIENTS; i++)
     {
-        if (jugadores[i].user != NULL && strcmp(jugadores[i].user, user) == 0)
+        if (strcmp(jugadores[i].user, user) == 0)
         {
-
             return false;
         }
     }
-
     return true;
 }
 
@@ -468,6 +465,8 @@ bool BarcoHundido(char tablero[FILAS][COLUMNAS], int fila, int columna)
             }
         }
     }
+
+    return false;
 }
 
 bool buscarJugadoresBuscando(struct jugador *jugadores)

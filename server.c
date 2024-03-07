@@ -325,7 +325,7 @@ int main()
                             else if (strncmp(buffer, "PASSWORD", 8) == 0)
                             {
 
-                                if (jugadores[i].user != NULL)
+                                if (jugadores[i].user[0] != '\0')
                                 {
 
                                     if (sscanf(buffer, "PASSWORD %s", password) == 1)
